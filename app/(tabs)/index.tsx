@@ -68,6 +68,10 @@ export default function Index() {
     loadRuns();
   }, []);
 
+  const deleteRun = (id: string) => {
+    setRuns((prev) => prev.filter((run) => run.id !== id));
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>🏃‍♂️ Run Log</Text>
@@ -93,6 +97,7 @@ export default function Index() {
             <Text style={{ color: "white" }}>
               {Number(item.distance).toFixed(1)} km
             </Text>
+            <Button title="削除" onPress={() => deleteRun(item.id)} />
           </View>
         )}
       />
