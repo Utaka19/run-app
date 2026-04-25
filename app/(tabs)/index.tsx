@@ -1,98 +1,129 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useEffect, useRef, useState } from "react";
+import {
+  Button,
+  FlatList,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+type Run = {
+  id: string;
+  distance: string;
+  date: string;
+};
 
-export default function HomeScreen() {
+export default function Index() {
+  const [distance, setDistance] = useState("");
+  const [runs, setRuns] = useState<Run[]>([]);
+  const isFirstLoad = useRef(true);
+
+  const addRun = () => {
+    if (!distance) return;
+    if (isNaN(Number(distance))) return;
+
+    const newRun: Run = {
+      id: Date.now().toString(),
+      distance,
+      date: new Date().toLocaleDateString(),
+    };
+
+    setRuns([newRun, ...runs]);
+    setDistance("");
+  };
+
+  useEffect(() => {
+    if (isFirstLoad.current) {
+      isFirstLoad.current = false;
+      return;
+    }
+
+    console.log("保存:", runs);
+
+    const saveRuns = async () => {
+      try {
+        await AsyncStorage.setItem("runs", JSON.stringify(runs));
+      } catch (e) {
+        console.log(e);
+      }
+    };
+
+    saveRuns();
+  }, [runs]);
+
+  useEffect(() => {
+    const loadRuns = async () => {
+      try {
+        const data = await AsyncStorage.getItem("runs");
+        console.log("読み込み:", data);
+        if (data !== null) {
+          setRuns(JSON.parse(data));
+        }
+      } catch (e) {
+        console.log(e);
+      }
+    };
+    loadRuns();
+  }, []);
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <View style={styles.container}>
+      <Text style={styles.title}>🏃‍♂️ Run Log</Text>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      <TextInput
+        style={styles.input}
+        placeholder="距離 (km)"
+        value={distance}
+        onChangeText={setDistance}
+        keyboardType="numeric"
+      />
+
+      <Button title="保存" onPress={addRun} />
+
+      {runs.length === 0 && <Text>まだ記録がありません</Text>}
+
+      <FlatList
+        data={runs}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View style={styles.item}>
+            <Text style={{ color: "white" }}>{item.date}</Text>
+            <Text style={{ color: "white" }}>
+              {Number(item.distance).toFixed(1)} km
+            </Text>
+          </View>
+        )}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    flex: 1,
+    padding: 20,
+    marginTop: 50,
+    backgroundColor: "#121212",
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  title: {
+    fontSize: 24,
+    marginBottom: 20,
+    color: "white",
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  input: {
+    borderWidth: 1,
+    padding: 10,
+    marginBottom: 10,
+    color: "white",
+    borderColor: "gray",
+  },
+  item: {
+    padding: 10,
+    borderBottomWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    borderColor: "gray",
   },
 });
