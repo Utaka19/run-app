@@ -19,6 +19,7 @@ export default function Index() {
   const [distance, setDistance] = useState("");
   const [runs, setRuns] = useState<Run[]>([]);
   const isFirstLoad = useRef(true);
+  const total = runs.reduce((sum, run) => sum + Number(run.distance), 0);
 
   const addRun = () => {
     if (!distance) return;
@@ -75,6 +76,10 @@ export default function Index() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>🏃‍♂️ Run Log</Text>
+
+      <Text style={{ color: "white", marginBottom: 10 }}>
+        合計: {total.toFixed(1)} km
+      </Text>
 
       <TextInput
         style={styles.input}
